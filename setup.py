@@ -21,6 +21,7 @@ setup(name='sprinter',
           'requests>=2.3.0',
           'six>=1.4.1',
           'virtualenv>=1.11.6',
+          'GitPython>=1.0.2'
       ],
       classifiers=[
           'Development Status :: 5 - Production/Stable',

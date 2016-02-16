@@ -22,9 +22,13 @@ from __future__ import unicode_literals
 import logging
 import os
 
+from git import Repo
+
 from sprinter.formula.base import FormulaBase
+from git.repo.fun import is_git_dir
 import sprinter.lib as lib
 
+GIT_VERSION = "git --version | awk '{print $3}'"
 CURRENT_BRANCH = "git -C {dir} rev-parse --abbrev-ref HEAD"
 CURRENT_REMOTE = "git -C {dir} remote get-url origin"
 CLONE_REPO = "git clone {repo} {dir}"
@@ -52,22 +56,24 @@ class GitFormula(FormulaBase):
         git_root = self.target.get('git_root', None)
         target_path = git_root or install_dir
         target_branch = self.target.get('branch', 'master')
-        git_opts = {
-            'repo': self.target.get('url', None),
-            'branch': target_branch,
-            'dir': target_path
-        }
-        # no existing path is given or the path is not a git repo
-        if (not target_path or not os.path.exists(target_path) or
-                not self.__git(CURRENT_BRANCH, git_opts)[1]):
-            self.__clone_repo(git_opts)
+
+        if not os.path.exists(target_path):
+            os.makedirs(target_path)
+
+        if is_git_dir(os.path.join(target_path, '.git')):
+            repo = Repo(target_path)
+
+        else:
+            repo = Repo.clone_from(self.target.get('url', None), target_path , branch=target_branch)
 
         # for an existing path, the git remote must match
-        elif self.__git(CURRENT_REMOTE, git_opts)[1] != self.target.get('url'):
+        elif repo.remotes.origin.url != self.target.get('url'):
             raise GitException('Incorrect origin for local repo!')
 
-        if self.__git(CURRENT_BRANCH, git_opts)[1] != target_branch:
-            self.__checkout_branch(git_opts)
+        repo.git.checkout(target_branch)
+
+        # if self.__git(CURRENT_BRANCH, git_opts)[1] != target_branch:
+        #     self.__checkout_branch(git_opts)
 
         FormulaBase.install(self)
 
