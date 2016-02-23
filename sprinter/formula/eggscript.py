@@ -80,10 +80,10 @@ class EggscriptFormula(FormulaBase):
     def __gather_eggs(self, config):
         eggs = []
         if config.has('editable_egg'):
-            eggs.append(self.__polish_egg(config.get('egg')), editable=True)
+            eggs.append(self.__polish_egg(config.get('editable_egg'), editable=True))
 
         if config.has('editable_eggs'):
-            for egg in re.split(',(?!<)|\n', config.get('eggs')):
+            for egg in re.split(',(?!<)|\n', config.get('editable_eggs')):
                 eggs.append(self.__polish_egg(egg, editable=True))
 
         if config.has('egg'):
