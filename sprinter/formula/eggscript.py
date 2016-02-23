@@ -6,7 +6,9 @@ inputs =
 
 [eggs]
 formula = sprinter.formula.egg
-egg = file:%(config:project_root)s
+editable_egg = file:%(config:project)s
+editable_eggs = file:%(config:other_project)s, file:%(another_project)
+egg = file:%(config:local_egg)s
 eggs = sprinter, pelican, pelican-gist
        jedi, epc
 executables = sprinter
@@ -39,7 +41,7 @@ class EggscriptFormulaException(FormulaException):
 class EggscriptFormula(FormulaBase):
 
     valid_options = FormulaBase.valid_options + [
-        'egg', 'eggs', 'redownload', 'fail_on_error', 'executables'
+        'egg', 'eggs', 'editable_egg', 'editable_eggs', 'redownload', 'fail_on_error', 'executables'
     ]
 
     def install(self):
@@ -66,16 +68,24 @@ class EggscriptFormula(FormulaBase):
                 self.logger.warn("No eggs will be installed! 'egg' or 'eggs' parameter not set!")
         return FormulaBase.validate(self)
 
-    def __polish_egg(self, raw_egg):
+    def __polish_egg(self, raw_egg, editable=False):
         egg = raw_egg.strip()
         if egg.startswith('file:'):
-            return "-e file://{egg}".format(
+            egg = "file://{egg}".format(
                 egg=os.path.expanduser(egg.split(':')[-1]))
         else:
-            return egg
+            egg = egg
+        return '-e {egg}'.format(egg=egg) if editable else egg
 
     def __gather_eggs(self, config):
         eggs = []
+        if config.has('editable_egg'):
+            eggs.append(self.__polish_egg(config.get('egg')), editable=True)
+
+        if config.has('editable_eggs'):
+            for egg in re.split(',(?!<)|\n', config.get('eggs')):
+                eggs.append(self.__polish_egg(egg, editable=True))
+
         if config.has('egg'):
             eggs.append(self.__polish_egg(config.get('egg')))
 
